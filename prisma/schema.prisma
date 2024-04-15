@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id     Int          @id @default(autoincrement())
+  email  String       @unique
+  name   String
+  hrm_id String       @unique @default(uuid())
+  role   TypeUserRole
+
+  @@map("users")
+}
+
+model Employee {
+  id     Int    @id @default(autoincrement())
+  email  String @unique
+  name   String
+  hrm_id String @unique @default(uuid())
+  points Int
+
+  Employee_Video Employee_Video[]
+  Answer         Answer[]
+  Exam_Result    Exam_Result[]
+
+  @@map("employees")
+}
+
+model Category {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String
+
+  Video Video[]
+
+  @@map("categories")
+}
+
+model Video {
+  id          Int    @id @default(autoincrement())
+  title       String
+  description String
+  thumbnail   String
+  url         String
+  points      Int
+  category_id Int
+
+  Category Category @relation(fields: [category_id], references: [id])
+
+  Employee_Video Employee_Video[]
+  Exam           Exam[]
+
+  @@map("videos")
+}
+
+model Employee_Video {
+  id          Int @id @default(autoincrement())
+  employee_id Int
+  video_id    Int
+  point       Int
+
+  Employee Employee @relation(fields: [employee_id], references: [id])
+  Video    Video    @relation(fields: [video_id], references: [id])
+
+  @@map("employees_videos")
+}
+
+model Exam {
+  id          Int    @id @default(autoincrement())
+  name        String
+  description String
+  video_id    Int
+
+  Video       Video         @relation(fields: [video_id], references: [id])
+  Question    Question[]
+  Exam_Result Exam_Result[]
+
+  @@map("exams")
+}
+
+model Question {
+  id           Int        @id @default(autoincrement())
+  question     String
+  alternatives Json
+  answer       TypeAnswer
+  exam_id      Int
+
+  Exam   Exam     @relation(fields: [exam_id], references: [id])
+  Answer Answer[]
+
+  @@map("questions")
+}
+
+model Answer {
+  id          Int        @id @default(autoincrement())
+  question_id Int
+  employee_id Int
+  answer      TypeAnswer
+
+  Question Question @relation(fields: [question_id], references: [id])
+  Employee Employee @relation(fields: [employee_id], references: [id])
+
+  @@map("answers")
+}
+
+model Exam_Result {
+  id          Int @id @default(autoincrement())
+  exam_id     Int
+  employee_id Int
+  points      Int
+
+  Exam     Exam     @relation(fields: [exam_id], references: [id])
+  Employee Employee @relation(fields: [employee_id], references: [id])
+
+  @@map("exam_results")
+}
+
+enum TypeAnswer {
+  A
+  B
+  C
+  D
+}
+
+enum TypeUserRole {
+  ADMIN
+  EMPLOYEE
+}
