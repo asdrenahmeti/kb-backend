@@ -8,126 +8,118 @@ datasource db {
 }
 
 model User {
-  id     Int          @id @default(autoincrement())
-  email  String       @unique
-  name   String
-  hrm_id String       @unique @default(uuid())
-  role   TypeUserRole
+  id         String   @id @default(uuid())
+  email      String   @unique
+  firstName  String
+  lastName   String
+  username   String
+  password   String
+  entryToken String
+  token      String?
+  profileImg String?
+  role       UserRole
+  profile    Profile?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
-model Employee {
-  id     Int    @id @default(autoincrement())
-  email  String @unique
-  name   String
-  hrm_id String @unique @default(uuid())
-  points Int
+model Profile {
+  id          String   @id @default(uuid())
+  dateOfBirth DateTime @db.Date
+  phoneNumber String
+  address     String
+  city        String
+  country     String
+  zipCode     String
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
 
-  Employee_Video Employee_Video[]
-  Answer         Answer[]
-  Exam_Result    Exam_Result[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("employees")
+  @@map("profiles")
 }
 
-model Category {
-  id          Int    @id @default(autoincrement())
-  name        String
-  description String
+model Site {
+  id            String     @id @default(uuid())
+  name          String
+  image         String
+  businessHours OpenHours?
+  rooms         Room[]
 
-  Video Video[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("categories")
+  @@map("sites")
 }
 
-model Video {
-  id          Int    @id @default(autoincrement())
-  title       String
-  description String
-  thumbnail   String
-  url         String
-  points      Int
-  category_id Int
+model Room {
+  id           String     @id @default(uuid())
+  name         String
+  capacity     Int
+  available    Boolean
+  pricing      Float
+  openingHours OpenHours?
+  bookings     Booking[]
+  site         Site?      @relation(fields: [siteId], references: [id])
+  siteId       String?
 
-  Category Category @relation(fields: [category_id], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  Employee_Video Employee_Video[]
-  Exam           Exam[]
-
-  @@map("videos")
+  @@map("rooms")
 }
 
-model Employee_Video {
-  id          Int @id @default(autoincrement())
-  employee_id Int
-  video_id    Int
-  point       Int
+model Booking {
+  id        String        @id @default(uuid())
+  room      Room?         @relation(fields: [roomId], references: [id])
+  roomId    String?
+  startTime DateTime
+  endTime   DateTime
+  status    BookingStatus @default(AVAILABLE)
 
-  Employee Employee @relation(fields: [employee_id], references: [id])
-  Video    Video    @relation(fields: [video_id], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("employees_videos")
+  @@map("bookings")
 }
 
-model Exam {
-  id          Int    @id @default(autoincrement())
-  name        String
-  description String
-  video_id    Int
+model OpenHours {
+  id        String   @id @default(uuid())
+  day       Weekday?
+  startTime DateTime @db.Time()
+  endTime   DateTime @db.Time()
+  site      Site     @relation(fields: [siteId], references: [id])
+  siteId    String   @unique
+  room      Room     @relation(fields: [roomId], references: [id])
+  roomId    String   @unique
 
-  Video       Video         @relation(fields: [video_id], references: [id])
-  Question    Question[]
-  Exam_Result Exam_Result[]
-
-  @@map("exams")
+  @@map("opening_hours")
 }
 
-model Question {
-  id           Int        @id @default(autoincrement())
-  question     String
-  alternatives Json
-  answer       TypeAnswer
-  exam_id      Int
-
-  Exam   Exam     @relation(fields: [exam_id], references: [id])
-  Answer Answer[]
-
-  @@map("questions")
-}
-
-model Answer {
-  id          Int        @id @default(autoincrement())
-  question_id Int
-  employee_id Int
-  answer      TypeAnswer
-
-  Question Question @relation(fields: [question_id], references: [id])
-  Employee Employee @relation(fields: [employee_id], references: [id])
-
-  @@map("answers")
-}
-
-model Exam_Result {
-  id          Int @id @default(autoincrement())
-  exam_id     Int
-  employee_id Int
-  points      Int
-
-  Exam     Exam     @relation(fields: [exam_id], references: [id])
-  Employee Employee @relation(fields: [employee_id], references: [id])
-
-  @@map("exam_results")
-}
-
-enum TypeAnswer {
-  A
-  B
-  C
-  D
-}
-
-enum TypeUserRole {
-  ADMIN
+enum UserRole {
+  CUSTOMER
   EMPLOYEE
+  SUPERVISOR
+  MANAGER
+  ADMIN
+}
+
+enum BookingStatus {
+  AVAILABLE
+  RESERVED
+  PAID
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
