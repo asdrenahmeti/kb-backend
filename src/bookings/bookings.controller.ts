@@ -30,9 +30,17 @@ export class BookingsController {
   findAll(
     @Query(new ParamsToIncludeValidationPipe('bookings')) include: any,
     @Query(ParamsToPaginationValidationPipe) pagination: any,
-    @Query(new ParamsToQueryValidationPipe('bookings')) filter: any,
+    @Query('gt') gt: string,
+    @Query('lt') lt: string,
+    @Query('siteId') siteId: string,
   ) {
-    return this.bookingsService.findAll({ filter, include, pagination });
+    return this.bookingsService.findAll({
+      include,
+      pagination,
+      gt: gt ? new Date(gt) : undefined,
+      lt: lt ? new Date(lt) : undefined,
+      siteId,
+    });
   }
 
   @Get(':id')

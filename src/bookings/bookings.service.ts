@@ -81,16 +81,25 @@ export class BookingsService {
     });
   }
 
-  async findAll({ filter, pagination, include }) {
+  async findAll({ pagination, include, gt, lt, siteId }) {
     try {
+      let where = {};
+      if (gt && lt) {
+        where = { AND: [{ date: { gte: gt } }, { date: { lte: lt } }] };
+      } else if (gt) {
+        where = { date: { gte: gt } };
+      } else if (lt) {
+        where = { date: { lte: lt } };
+      }
+
       const bookings = await this.prisma.booking.findMany({
-        where: filter,
+        where: { ...where, room: { site: { id: siteId } } },
         include,
         ...(pagination && { skip: pagination.skip }),
         ...(pagination && { take: pagination.take }),
       });
       if (pagination) {
-        const all = await this.prisma.booking.count({ where: filter });
+        const all = await this.prisma.booking.count({ where });
         return {
           total_pages: Math.ceil(all / pagination.take),
           current_page: pagination.skip / pagination.take + 1,
