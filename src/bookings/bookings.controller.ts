@@ -13,7 +13,6 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ParamsToPaginationValidationPipe } from 'src/common/pipes/pagination.pipes';
 import { ParamsToIncludeValidationPipe } from 'src/common/pipes/params_to_include.pipes';
-import { ParamsToQueryValidationPipe } from 'src/common/pipes/params_to_query.pipes';
 import { ApiTags } from '@nestjs/swagger';
 
 @Controller('bookings')

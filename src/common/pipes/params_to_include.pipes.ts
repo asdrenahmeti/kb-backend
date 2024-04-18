@@ -14,7 +14,7 @@ export class ParamsToIncludeValidationPipe implements PipeTransform {
       query?.include && query.include.split(',').map((el) => el.trim());
 
     const includeObject = {};
-    includeQueryField.forEach((el) => {
+    includeQueryField?.forEach((el) => {
       if (canInclude.some((item) => item.name === el)) {
         includeObject[el] = true;
       }

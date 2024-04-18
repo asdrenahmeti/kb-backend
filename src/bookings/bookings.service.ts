@@ -8,7 +8,6 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma.service';
 import { Booking, BookingStatus } from '@prisma/client';
 import { DateTime } from 'luxon';
-import { start } from 'node:repl';
 import { catchErrorHandler } from 'src/common/helpers/error-handler.prisma';
 
 @Injectable()
@@ -17,7 +16,6 @@ export class BookingsService {
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
     const { roomId, date, startTime, endTime } = createBookingDto;
 
-    // Check if the room exists
     const room = await this.prisma.room.findUnique({ where: { id: roomId } });
     if (!room) {
       throw new NotFoundException('Room not found');
@@ -29,7 +27,7 @@ export class BookingsService {
     const bookingEndTime = DateTime.fromFormat(endTime, 'HH:mm', {
       zone: 'UTC',
     });
-    // Check if the slot is available
+
     const overlappingBookings = await this.prisma.booking.findMany({
       where: {
         roomId,
@@ -69,7 +67,6 @@ export class BookingsService {
       });
     }
 
-    // Create the booking
     return await this.prisma.booking.create({
       data: {
         roomId,
