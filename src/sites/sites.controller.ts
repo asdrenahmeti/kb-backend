@@ -16,8 +16,10 @@ import { CreateSiteDto } from './dto/create-site.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { siteImageFile } from 'src/common/utils/upload-file-config';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('sites')
+@ApiTags('sites')
 export class SitesController {
   constructor(private readonly sitesService: SitesService) {}
 

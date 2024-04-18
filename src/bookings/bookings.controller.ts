@@ -1,9 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
+import { ParamsToPaginationValidationPipe } from 'src/common/pipes/pagination.pipes';
+import { ParamsToIncludeValidationPipe } from 'src/common/pipes/params_to_include.pipes';
+import { ParamsToQueryValidationPipe } from 'src/common/pipes/params_to_query.pipes';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('bookings')
+@ApiTags('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
@@ -13,8 +27,12 @@ export class BookingsController {
   }
 
   @Get()
-  findAll() {
-    return this.bookingsService.findAll();
+  findAll(
+    @Query(new ParamsToIncludeValidationPipe('bookings')) include: any,
+    @Query(ParamsToPaginationValidationPipe) pagination: any,
+    @Query(new ParamsToQueryValidationPipe('bookings')) filter: any,
+  ) {
+    return this.bookingsService.findAll({ filter, include, pagination });
   }
 
   @Get(':id')

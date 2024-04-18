@@ -80,8 +80,8 @@ model Room {
 model Booking {
   id        String        @id @default(uuid())
   date      DateTime
-  startTime String
-  endTime   String
+  startTime DateTime
+  endTime   DateTime
   status    BookingStatus @default(AVAILABLE)
   room      Room?         @relation(fields: [roomId], references: [id])
   roomId    String?

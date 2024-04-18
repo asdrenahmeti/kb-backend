@@ -68,6 +68,7 @@ export class RoomsService {
       include: {
         site: { select: { name: true } },
         slots: { select: { startTime: true, endTime: true, pricing: true } },
+        bookings: true,
       },
     });
 
