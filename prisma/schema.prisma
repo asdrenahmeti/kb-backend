@@ -44,11 +44,15 @@ model Profile {
 }
 
 model Site {
-  id            String     @id @default(uuid())
-  name          String
-  image         String
-  businessHours OpenHours?
-  rooms         Room[]
+  id           String  @id @default(uuid())
+  name         String
+  image        String
+  // businessHours OpenHours?
+  openingHours String
+  closingHours String
+  status       Boolean @default(true)
+
+  rooms Room[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -57,15 +61,15 @@ model Site {
 }
 
 model Room {
-  id           String     @id @default(uuid())
-  name         String
-  capacity     Int
-  available    Boolean
-  pricing      Float
-  openingHours OpenHours?
-  bookings     Booking[]
-  site         Site?      @relation(fields: [siteId], references: [id])
-  siteId       String?
+  id        String      @id @default(uuid())
+  name      String
+  capacity  Int
+  available Boolean     @default(true)
+  pricing   Float?
+  slots     OpenHours[]
+  bookings  Booking[]
+  site      Site?       @relation(fields: [siteId], references: [id])
+  siteId    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -75,11 +79,12 @@ model Room {
 
 model Booking {
   id        String        @id @default(uuid())
+  date      DateTime
+  startTime String
+  endTime   String
+  status    BookingStatus @default(AVAILABLE)
   room      Room?         @relation(fields: [roomId], references: [id])
   roomId    String?
-  startTime DateTime
-  endTime   DateTime
-  status    BookingStatus @default(AVAILABLE)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -90,12 +95,16 @@ model Booking {
 model OpenHours {
   id        String   @id @default(uuid())
   day       Weekday?
-  startTime DateTime @db.Time()
-  endTime   DateTime @db.Time()
-  site      Site     @relation(fields: [siteId], references: [id])
-  siteId    String   @unique
+  startTime String
+  endTime   String
+  pricing   Float?
+  // site      Site     @relation(fields: [siteId], references: [id])
+  // siteId    String   @unique
   room      Room     @relation(fields: [roomId], references: [id])
-  roomId    String   @unique
+  roomId    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("opening_hours")
 }
