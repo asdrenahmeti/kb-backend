@@ -30,12 +30,12 @@ export class SitesController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<any> {
     try {
-      if (!file) {
-        throw new HttpException(
-          'Please upload an image for your site! Format accepted: jpg, png, heic',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+      // if (!file) {
+      //   throw new HttpException(
+      //     'Please upload an image for your site! Format accepted: jpg, png, heic',
+      //     HttpStatus.BAD_REQUEST,
+      //   );
+      // }
 
       const createdSite = await this.sitesService.create(createSiteDto, file);
       return createdSite;
