@@ -1,5 +1,5 @@
 import { BookingStatus } from '@prisma/client';
-import { IsNotEmpty, IsDateString, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsDateString, IsUUID, IsOptional } from 'class-validator';
 
 export class CreateBookingDto {
   @IsNotEmpty()
@@ -18,4 +18,7 @@ export class CreateBookingDto {
 
   // @IsNotEmpty()
   // status: BookingStatus;
+
+  @IsOptional()
+  user: string;
 }
