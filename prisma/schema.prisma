@@ -85,6 +85,7 @@ model Booking {
   status    BookingStatus @default(AVAILABLE)
   room      Room?         @relation(fields: [roomId], references: [id])
   roomId    String?
+  user      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
