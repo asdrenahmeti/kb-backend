@@ -71,4 +71,11 @@ export class SitesService {
     });
     return deletedSite;
   }
+
+  async findRooms(id: string) {
+    const rooms = await this.prisma.site.findUnique({
+      where: { id },
+      include: { rooms: true },
+    });
+  }
 }

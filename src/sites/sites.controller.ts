@@ -54,6 +54,11 @@ export class SitesController {
     return this.sitesService.findOne(id);
   }
 
+  @Get(':id/rooms')
+  findRooms(@Param('id') id: string) {
+    return this.sitesService.findRooms(id);
+  }
+
   @Patch(':id')
   @UseInterceptors(FileInterceptor('file', siteImageFile))
   async update(
