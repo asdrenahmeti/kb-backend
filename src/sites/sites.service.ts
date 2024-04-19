@@ -75,7 +75,7 @@ export class SitesService {
   async findRooms(id: string) {
     const rooms = await this.prisma.site.findUnique({
       where: { id },
-      include: { rooms: true },
+      include: { rooms: { include: { slots: true } } },
     });
 
     return rooms;
