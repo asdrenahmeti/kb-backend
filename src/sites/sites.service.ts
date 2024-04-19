@@ -77,5 +77,7 @@ export class SitesService {
       where: { id },
       include: { rooms: true },
     });
+
+    return rooms;
   }
 }
