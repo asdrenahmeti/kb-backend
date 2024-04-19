@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -17,9 +18,27 @@ export class BookingsService {
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
     const { roomId, date, startTime, endTime } = createBookingDto;
 
-    const room = await this.prisma.room.findUnique({ where: { id: roomId } });
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+      include: { site: true },
+    });
     if (!room) {
       throw new NotFoundException('Room not found');
+    }
+
+    const { year, month, day } = DateTime.fromISO(date);
+
+    const siteOpenTime = parseInt(room.site.openingHours.split(':')[0]);
+    const siteCloseTime = parseInt(room.site.closingHours.split(':')[0]);
+
+    const openingHour = DateTime.utc(year, month, day, siteOpenTime, 0, 0);
+    const closingHour = DateTime.utc(year, month, day, siteCloseTime, 0, 0);
+
+    if (
+      (startTime < openingHour.toISO() && startTime > closingHour.toISO()) ||
+      (endTime > closingHour.toISO() && endTime < openingHour.toISO())
+    ) {
+      throw new BadRequestException('You cannot book outside business hours');
     }
 
     const overlappingBookings = await this.prisma.booking.findMany({

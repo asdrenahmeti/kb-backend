@@ -20,10 +20,6 @@ export class CreateRoomDto {
   @IsBoolean()
   available: boolean;
 
-  @IsNotEmpty()
-  @IsNumber()
-  pricing: number;
-
   @IsOptional()
   openingHours: OpenHours[];
 
