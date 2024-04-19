@@ -75,6 +75,11 @@ export class BookingsService {
         where: { id: siteId },
         select: { openingHours: true, closingHours: true },
       });
+
+      if (!siteTimes) {
+        throw new NotFoundException('No site found');
+      }
+
       const queryDate = gt;
 
       const { openingHour, closingHour } = calculateBusinessHours(
