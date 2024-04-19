@@ -34,6 +34,7 @@ export class SitesService {
   async findOne(id: string) {
     const site = await this.prisma.site.findUnique({
       where: { id },
+      include: { rooms: true },
     });
     if (!site) {
       throw new BadRequestException(`Site not found`);

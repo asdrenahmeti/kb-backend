@@ -39,8 +39,8 @@ export class RoomsService {
 
       if (openingHours && openingHours.length > 0) {
         for (const slot of openingHours) {
-          const startTime = DateTime.fromFormat(slot.startTime, 'HH:mm');
-          const endTime = DateTime.fromFormat(slot.endTime, 'HH:mm');
+          // const startTime = DateTime.fromFormat(slot.startTime, 'HH:mm');
+          // const endTime = DateTime.fromFormat(slot.endTime, 'HH:mm');
 
           // if (startTime < siteOpeningTime || endTime > siteClosingTime) {
           //   throw new Error('Slot falls outside of site opening hours');
@@ -50,8 +50,8 @@ export class RoomsService {
             data: {
               ...slot,
               roomId: room.id,
-              startTime: startTime.toISO(),
-              endTime: endTime.toISO(),
+              startTime: slot.startTime,
+              endTime: slot.endTime,
             },
           });
         }
@@ -74,8 +74,10 @@ export class RoomsService {
 
     const formattedRooms = rooms.map((room) => {
       const formattedSlots = room.slots.map((slot) => ({
-        startTime: DateTime.fromISO(slot.startTime).toFormat('HH:mm'),
-        endTime: DateTime.fromISO(slot.endTime).toFormat('HH:mm'),
+        // startTime: DateTime.fromISO(slot.startTime).toFormat('HH:mm'),
+        // endTime: DateTime.fromISO(slot.endTime).toFormat('HH:mm'),
+        startTime: slot.startTime,
+        endTime: slot.endTime,
         pricing: slot.pricing,
       }));
       return { ...room, slots: formattedSlots };
@@ -104,8 +106,10 @@ export class RoomsService {
     }
 
     const formattedSlots = room.slots.map((slot) => ({
-      startTime: DateTime.fromISO(slot.startTime).toFormat('HH:mm'),
-      endTime: DateTime.fromISO(slot.endTime).toFormat('HH:mm'),
+      // startTime: DateTime.fromISO(slot.startTime).toFormat('HH:mm'),
+      // endTime: DateTime.fromISO(slot.endTime).toFormat('HH:mm'),
+      startTime: slot.startTime,
+      endTime: slot.endTime,
       pricing: slot.pricing,
     }));
 
@@ -136,14 +140,16 @@ export class RoomsService {
 
       if (openingHours && openingHours.length > 0) {
         const formattedSlots = openingHours.map((slot) => ({
-          startTime: DateTime.fromFormat(slot.startTime, 'HH:mm').toISO(),
-          endTime: DateTime.fromFormat(slot.endTime, 'HH:mm').toISO(),
+          // startTime: DateTime.fromFormat(slot.startTime, 'HH:mm').toISO(),
+          // endTime: DateTime.fromFormat(slot.endTime, 'HH:mm').toISO(),
+          startTime: slot.startTime,
+          endTime: slot.endTime,
           pricing: slot.pricing,
         }));
 
-        // await this.prisma.openHours.deleteMany({
-        //   where: { roomId: id },
-        // });
+        await this.prisma.openHours.deleteMany({
+          where: { roomId: id },
+        });
 
         await this.prisma.openHours.createMany({
           data: formattedSlots.map((slot) => ({

@@ -7,8 +7,9 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma.service';
 import { Booking, BookingStatus } from '@prisma/client';
-import { DateTime } from 'luxon';
+import { DateTime, Interval } from 'luxon';
 import { catchErrorHandler } from 'src/common/helpers/error-handler.prisma';
+import { HttpException } from '@nestjs/common';
 
 @Injectable()
 export class BookingsService {
@@ -21,13 +22,6 @@ export class BookingsService {
       throw new NotFoundException('Room not found');
     }
 
-    const bookingStartTime = DateTime.fromFormat(startTime, 'HH:mm', {
-      zone: 'UTC',
-    });
-    const bookingEndTime = DateTime.fromFormat(endTime, 'HH:mm', {
-      zone: 'UTC',
-    });
-
     const overlappingBookings = await this.prisma.booking.findMany({
       where: {
         roomId,
@@ -35,21 +29,18 @@ export class BookingsService {
         OR: [
           {
             AND: [
-              { startTime: { lt: bookingEndTime.toISO() } },
-              { endTime: { gt: bookingStartTime.toISO() } },
+              { startTime: { lt: endTime } },
+              { endTime: { gt: startTime } },
             ],
           },
           {
             AND: [
-              { startTime: { gt: bookingStartTime.toISO() } },
-              { startTime: { lt: bookingEndTime.toISO() } },
+              { startTime: { gt: startTime } },
+              { startTime: { lt: endTime } },
             ],
           },
           {
-            AND: [
-              { endTime: { gt: bookingStartTime.toISO() } },
-              { endTime: { lt: bookingEndTime.toISO() } },
-            ],
+            AND: [{ endTime: { gt: startTime } }, { endTime: { lt: endTime } }],
           },
         ],
       },
@@ -71,8 +62,8 @@ export class BookingsService {
       data: {
         roomId,
         date,
-        startTime: bookingStartTime.toISO(),
-        endTime: bookingEndTime.toISO(),
+        startTime: startTime,
+        endTime: endTime,
         status: BookingStatus.RESERVED,
       },
     });
@@ -80,37 +71,46 @@ export class BookingsService {
 
   async findAll({ pagination, include, gt, lt, siteId }) {
     try {
-      let where = {};
-      if (gt && lt) {
-        where = { AND: [{ date: { gte: gt } }, { date: { lte: lt } }] };
-      } else if (gt) {
-        where = { date: { gte: gt } };
-      } else if (lt) {
-        where = { date: { lte: lt } };
-      }
-
-      const bookings = await this.prisma.booking.findMany({
-        where: { ...where, room: { site: { id: siteId } } },
-        include,
-        ...(pagination && { skip: pagination.skip }),
-        ...(pagination && { take: pagination.take }),
+      const siteTimes = await this.prisma.site.findUnique({
+        where: { id: siteId },
+        select: { openingHours: true, closingHours: true },
       });
-      if (pagination) {
-        const all = await this.prisma.booking.count({ where });
-        return {
-          total_pages: Math.ceil(all / pagination.take),
-          current_page: pagination.skip / pagination.take + 1,
-          per_page: pagination.take,
-          data: bookings,
-        };
-      }
-      return bookings;
-    } catch (error) {
-      catchErrorHandler(error);
-    }
+      const queryDate = gt;
+
+      const { openingHour, closingHour } = calculateBusinessHours(
+        queryDate,
+        siteTimes.openingHours,
+        siteTimes.closingHours,
+      );
+
+      const site = await this.prisma.site.findUnique({
+        where: { id: siteId },
+        include: {
+          rooms: {
+            include: {
+              bookings: {
+                where: {
+                  // date: { gte: openingHour.toISO(), lte: closingHour.toISO() },
+                  startTime: {
+                    gte: openingHour.toISO(),
+                    lte: closingHour.toISO(),
+                  },
+                  endTime: {
+                    gte: openingHour.toISO(),
+                    lte: closingHour.toISO(),
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return site;
+    } catch (error) {}
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} booking`;
   }
 
@@ -142,4 +142,24 @@ function getBookingDetails(booking: Booking) {
     endTime: parsedEndTime,
     status,
   };
+}
+
+function calculateBusinessHours(queryDate, openHour, closeHour) {
+  const queryDateTime = DateTime.fromISO(queryDate.toISOString());
+  // Get the date components (year, month, day) from the query date
+  const year = queryDateTime.year;
+  const month = queryDateTime.month;
+  const day = queryDateTime.day;
+
+  const startTime = parseInt(openHour.split(':')[0]);
+  const endTime = parseInt(closeHour.split(':')[0]);
+
+  // Set the opening hour
+  const openingHour = DateTime.utc(year, month, day, startTime, 0, 0);
+
+  const closingHour = openingHour
+    .plus({ days: 1 })
+    .set({ hour: endTime, minute: 0, second: 0, millisecond: 0 });
+
+  return { openingHour, closingHour };
 }
