@@ -46,7 +46,7 @@ model Profile {
 model Site {
   id           String  @id @default(uuid())
   name         String
-  image        String
+  image        String?
   // businessHours OpenHours?
   openingHours String
   closingHours String

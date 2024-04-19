@@ -146,7 +146,7 @@ function getBookingDetails(booking: Booking) {
 
 function calculateBusinessHours(queryDate, openHour, closeHour) {
   const queryDateTime = DateTime.fromISO(queryDate.toISOString());
-  // Get the date components (year, month, day) from the query date
+
   const year = queryDateTime.year;
   const month = queryDateTime.month;
   const day = queryDateTime.day;
@@ -154,7 +154,6 @@ function calculateBusinessHours(queryDate, openHour, closeHour) {
   const startTime = parseInt(openHour.split(':')[0]);
   const endTime = parseInt(closeHour.split(':')[0]);
 
-  // Set the opening hour
   const openingHour = DateTime.utc(year, month, day, startTime, 0, 0);
 
   const closingHour = openingHour
