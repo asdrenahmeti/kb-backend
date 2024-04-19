@@ -134,12 +134,100 @@ export class BookingsService {
     } catch (error) {}
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} booking`;
+  async findOne(id: string) {
+    return await this.prisma.booking.findUnique({
+      where: { id },
+      include: { room: true },
+    });
   }
 
-  update(id: number, updateBookingDto: UpdateBookingDto) {
-    return `This action updates a #${id} booking`;
+  async update(
+    id: string,
+    updateBookingDto: UpdateBookingDto,
+  ): Promise<Booking> {
+    const { roomId, date, startTime, endTime } = updateBookingDto;
+
+    // Check if the booking exists
+    const booking = await this.prisma.booking.findUnique({
+      where: { id },
+    });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    // Check if the room exists
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+      include: { site: true },
+    });
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    const { year, month, day } = DateTime.fromISO(date);
+
+    const siteOpenTime = parseInt(room.site.openingHours.split(':')[0]);
+    const siteCloseTime = parseInt(room.site.closingHours.split(':')[0]);
+
+    const openingHour = DateTime.utc(year, month, day, siteOpenTime, 0, 0);
+    const closingHour = DateTime.utc(year, month, day, siteCloseTime, 0, 0);
+
+    if (
+      (startTime < openingHour.toISO() && startTime > closingHour.toISO()) ||
+      (endTime > closingHour.toISO() && endTime < openingHour.toISO())
+    ) {
+      throw new BadRequestException('You cannot book outside business hours');
+    }
+
+    // Check for overlapping bookings
+    const overlappingBookings = await this.prisma.booking.findMany({
+      where: {
+        roomId,
+        date,
+        id: {
+          not: id, // Exclude the current booking from the search
+        },
+        OR: [
+          {
+            AND: [
+              { startTime: { lt: endTime } },
+              { endTime: { gt: startTime } },
+            ],
+          },
+          {
+            AND: [
+              { startTime: { gt: startTime } },
+              { startTime: { lt: endTime } },
+            ],
+          },
+          {
+            AND: [{ endTime: { gt: startTime } }, { endTime: { lt: endTime } }],
+          },
+        ],
+      },
+    });
+
+    if (overlappingBookings.length > 0) {
+      const overlappingBooking = overlappingBookings[0];
+      const overlappingBookingDetails = getBookingDetails(overlappingBooking);
+
+      throw new ConflictException({
+        message: 'Requested booking slot overlaps with existing bookings.',
+        error: 'Conflict',
+        statusCode: 409,
+        overlappingBookingDetails: overlappingBookingDetails,
+      });
+    }
+
+    return await this.prisma.booking.update({
+      where: { id },
+      data: {
+        roomId,
+        date,
+        startTime,
+        endTime,
+      },
+    });
   }
 
   remove(id: number) {
