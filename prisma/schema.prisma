@@ -10,11 +10,11 @@ datasource db {
 model User {
   id         String   @id @default(uuid())
   email      String   @unique
-  firstName  String
-  lastName   String
-  username   String
+  firstName  String?
+  lastName   String?
+  username   String?
   password   String
-  entryToken String
+  entryToken String?
   token      String?
   profileImg String?
   role       UserRole
@@ -78,14 +78,15 @@ model Room {
 }
 
 model Booking {
-  id        String        @id @default(uuid())
-  date      DateTime
-  startTime DateTime
-  endTime   DateTime
-  status    BookingStatus @default(AVAILABLE)
-  room      Room?         @relation(fields: [roomId], references: [id])
-  roomId    String?
-  user      String?
+  id         String        @id @default(uuid())
+  date       DateTime
+  startTime  DateTime
+  endTime    DateTime
+  status     BookingStatus @default(AVAILABLE)
+  room       Room?         @relation(fields: [roomId], references: [id])
+  roomId     String?
+  user       String?
+  menu_order Menu_order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,6 +109,34 @@ model OpenHours {
   updatedAt DateTime @updatedAt
 
   @@map("opening_hours")
+}
+
+model Menu {
+  id    String   @id @default(uuid())
+  type  MenuType
+  name  String
+  price String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("menus")
+}
+
+model Menu_order {
+  id         String  @id @default(uuid())
+  booking_id String
+  booking    Booking @relation(fields: [booking_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("menu_orders")
+}
+
+enum MenuType {
+  DRINK
+  FOOD
 }
 
 enum UserRole {
