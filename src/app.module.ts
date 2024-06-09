@@ -11,6 +11,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { PrismaService } from './prisma.service';
 import { AuthModule } from './auth/auth.module';
+import { MenusModule } from './menus/menus.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { AuthModule } from './auth/auth.module';
     BookingsModule,
     ProfilesModule,
     AuthModule,
+    MenusModule,
   ],
   controllers: [AppController],
   providers: [AppService, s3ClientProvider, PrismaService],

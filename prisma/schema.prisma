@@ -53,6 +53,7 @@ model Site {
   status       Boolean @default(true)
 
   rooms Room[]
+  menu  Menu[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,10 +113,12 @@ model OpenHours {
 }
 
 model Menu {
-  id    String   @id @default(uuid())
-  type  MenuType
-  name  String
-  price String
+  id        String       @id @default(uuid())
+  item_type MenuItemType
+  name      String
+  price     Float
+  site_id   String
+  site      Site         @relation(fields: [site_id], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -134,7 +137,7 @@ model Menu_order {
   @@map("menu_orders")
 }
 
-enum MenuType {
+enum MenuItemType {
   DRINK
   FOOD
 }
