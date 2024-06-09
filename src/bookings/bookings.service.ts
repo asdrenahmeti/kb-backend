@@ -17,7 +17,7 @@ export class BookingsService {
   constructor(private prisma: PrismaService) {}
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
     try {
-      const { roomId, date, startTime, endTime } = createBookingDto;
+      const { roomId, date, startTime, endTime, menuOrders } = createBookingDto;
 
       const room = await this.prisma.room.findUnique({
         where: { id: roomId },
@@ -80,6 +80,9 @@ export class BookingsService {
           overlappingBookingDetails: overlappingBookingDetails,
         });
       }
+      // const menuOrdersData = menuOrders.map((order) => ({
+      //   menu: { connect: { id: order.menu_id } },
+      // }));
 
       return await this.prisma.booking.create({
         data: {
@@ -88,6 +91,15 @@ export class BookingsService {
           startTime: startTime,
           endTime: endTime,
           status: BookingStatus.RESERVED,
+          menu_orders: {
+            create: menuOrders.map((order) => ({
+              quantity: order.quantity,
+              menu: { connect: { id: order.menu_id } },
+            })),
+          },
+        },
+        include: {
+          menu_orders: true,
         },
       });
     } catch (error) {
@@ -138,7 +150,9 @@ export class BookingsService {
       });
 
       return site;
-    } catch (error) {}
+    } catch (error) {
+      throw new Error(error.message);
+    }
   }
 
   async findOne(id: string) {
@@ -154,7 +168,7 @@ export class BookingsService {
   ): Promise<Booking> {
     const { roomId, date, startTime, endTime } = updateBookingDto;
 
-    // Check if the booking exists
+    //  if booking
     const booking = await this.prisma.booking.findUnique({
       where: { id },
     });
@@ -162,7 +176,7 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    // Check if the room exists
+    // if exists
     const room = await this.prisma.room.findUnique({
       where: { id: roomId },
       include: { site: true },
@@ -186,13 +200,13 @@ export class BookingsService {
       throw new BadRequestException('You cannot book outside business hours');
     }
 
-    // Check for overlapping bookings
+    //overlapping
     const overlappingBookings = await this.prisma.booking.findMany({
       where: {
         roomId,
         date,
         id: {
-          not: id, // Exclude the current booking from the search
+          not: id,
         },
         OR: [
           {
@@ -237,8 +251,10 @@ export class BookingsService {
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} booking`;
+  async remove(id: string) {
+    // const removeBooking = await this.prisma.booking.delete({
+    //   where: { id },
+    // });
   }
 }
 

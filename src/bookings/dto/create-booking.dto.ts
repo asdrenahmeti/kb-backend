@@ -1,4 +1,4 @@
-import { BookingStatus } from '@prisma/client';
+import { BookingStatus, Menu_order } from '@prisma/client';
 import { IsNotEmpty, IsDateString, IsUUID, IsOptional } from 'class-validator';
 
 export class CreateBookingDto {
@@ -21,4 +21,7 @@ export class CreateBookingDto {
 
   @IsOptional()
   user: string;
+
+  @IsOptional()
+  menuOrders: Menu_order[];
 }

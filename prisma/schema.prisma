@@ -52,8 +52,8 @@ model Site {
   closingHours String
   status       Boolean @default(true)
 
-  rooms Room[]
-  menu  Menu[]
+  rooms     Room[]
+  menuItems MenuItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -79,15 +79,15 @@ model Room {
 }
 
 model Booking {
-  id         String        @id @default(uuid())
-  date       DateTime
-  startTime  DateTime
-  endTime    DateTime
-  status     BookingStatus @default(AVAILABLE)
-  room       Room?         @relation(fields: [roomId], references: [id])
-  roomId     String?
-  user       String?
-  menu_order Menu_order[]
+  id          String        @id @default(uuid())
+  date        DateTime
+  startTime   DateTime
+  endTime     DateTime
+  status      BookingStatus @default(AVAILABLE)
+  room        Room?         @relation(fields: [roomId], references: [id])
+  roomId      String?
+  user        String?
+  menu_orders Menu_order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,24 +112,28 @@ model OpenHours {
   @@map("opening_hours")
 }
 
-model Menu {
-  id        String       @id @default(uuid())
-  item_type MenuItemType
-  name      String
-  price     Float
-  site_id   String
-  site      Site         @relation(fields: [site_id], references: [id])
+model MenuItem {
+  id          String       @id @default(uuid())
+  item_type   MenuItemType
+  name        String
+  price       Float
+  site_id     String
+  site        Site         @relation(fields: [site_id], references: [id])
+  menu_orders Menu_order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("menus")
+  @@map("menu_items")
 }
 
 model Menu_order {
-  id         String  @id @default(uuid())
+  id         String   @id @default(uuid())
   booking_id String
-  booking    Booking @relation(fields: [booking_id], references: [id])
+  booking    Booking  @relation(fields: [booking_id], references: [id])
+  quantity   Int?
+  menu_id    String
+  menu       MenuItem @relation(fields: [menu_id], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
