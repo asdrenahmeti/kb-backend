@@ -8,21 +8,29 @@ import {
   Delete,
   HttpException,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { roomImageFile } from '../common/utils/upload-file-config';
 
 @Controller('rooms')
 @ApiTags('rooms')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
+  @UseInterceptors(FileInterceptor('file', roomImageFile))
   @Post()
-  create(@Body() createRoomDto: CreateRoomDto) {
+  create(
+    @Body() createRoomDto: CreateRoomDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     try {
-      const createdRoom = this.roomsService.create(createRoomDto);
+      const createdRoom = this.roomsService.create(createRoomDto,file);
       return createdRoom;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

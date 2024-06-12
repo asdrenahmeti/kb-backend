@@ -13,11 +13,10 @@ export class CreateRoomDto {
   name: string;
 
   @IsNotEmpty()
-  @IsNumber()
   capacity: number;
 
-  @IsNotEmpty()
   @IsBoolean()
+  @IsOptional()
   available: boolean;
 
   @IsOptional()
@@ -25,4 +24,7 @@ export class CreateRoomDto {
 
   @IsNotEmpty()
   siteId: string;
+
+  @IsOptional()
+  image: string;
 }

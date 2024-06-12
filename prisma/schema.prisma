@@ -64,6 +64,7 @@ model Site {
 model Room {
   id        String      @id @default(uuid())
   name      String
+  image     String?
   capacity  Int
   available Boolean     @default(true)
   pricing   Float?
