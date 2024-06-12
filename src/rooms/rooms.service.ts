@@ -15,9 +15,12 @@ import { DateTime } from 'luxon';
 export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createRoomDto: CreateRoomDto): Promise<Room | Error> {
+  async create(
+    createRoomDto: CreateRoomDto,
+    file?: Express.Multer.File,
+  ): Promise<Room | Error> {
     try {
-      const { openingHours, ...roomData } = createRoomDto;
+      const { openingHours, capacity, ...roomData } = createRoomDto;
 
       const site = await this.prisma.site.findFirst({
         where: { id: roomData.siteId },
@@ -35,7 +38,16 @@ export class RoomsService {
         throw new Error(`Please provide business hours for site: ${site.name}`);
       }
 
-      const room = await this.prisma.room.create({ data: roomData });
+      const data: any = {
+        ...roomData,
+        capacity: Number(capacity),
+      };
+
+      if (file) {
+        data.image = file.filename;
+      }
+
+      const room = await this.prisma.room.create({ data });
 
       if (openingHours && openingHours.length > 0) {
         for (const slot of openingHours) {

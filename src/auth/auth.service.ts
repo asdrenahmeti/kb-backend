@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
+import { catchErrorHandler } from '../common/helpers/error-handler.prisma';
 
 @Injectable()
 export class AuthService {
@@ -36,16 +37,44 @@ export class AuthService {
     };
   }
 
+  // async signUp(createAuthDto: CreateAuthDto) {
+  //   const { email, password, role } = createAuthDto;
+  //   const hashedPassword = await bcrypt.hash(password, 10);
+  //   const user = await this.prisma.user.create({
+  //     data: {
+  //       email,
+  //       password: hashedPassword,
+  //       role: role,
+  //     },
+  //   });
+  //   return user;
+  // }
   async signUp(createAuthDto: CreateAuthDto) {
-    const { email, password } = createAuthDto;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await this.prisma.user.create({
-      data: {
+    try {
+      const { email, password, role } = createAuthDto;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const userData = {
         email,
         password: hashedPassword,
-        role: 'ADMIN',
-      },
-    });
-    return user;
+        role: role || 'STAFF',
+      };
+
+      const user = await this.prisma.user.create({
+        data: userData,
+      });
+      return user;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'The email address is already registered. Please use a different email or log in.',
+        );
+      } else {
+        catchErrorHandler(error);
+      }
+    }
   }
 }
