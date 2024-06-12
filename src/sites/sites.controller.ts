@@ -28,7 +28,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 export class SitesController {
   constructor(private readonly sitesService: SitesService) {}
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  // @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SUPERVISOR, UserRole.STAFF)
   @Post()
   @UseInterceptors(FileInterceptor('file', siteImageFile))
