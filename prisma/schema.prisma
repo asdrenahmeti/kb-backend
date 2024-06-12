@@ -80,7 +80,7 @@ model Room {
 
 model Booking {
   id          String        @id @default(uuid())
-  date        DateTime
+  date        DateTime //@db.Date
   startTime   DateTime
   endTime     DateTime
   status      BookingStatus @default(AVAILABLE)
@@ -103,7 +103,7 @@ model OpenHours {
   pricing   Float?
   // site      Site     @relation(fields: [siteId], references: [id])
   // siteId    String   @unique
-  room      Room     @relation(fields: [roomId], references: [id])
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   roomId    String
 
   createdAt DateTime @default(now())
@@ -117,6 +117,7 @@ model MenuItem {
   item_type   MenuItemType
   name        String
   price       Float
+  measure     String?
   site_id     String
   site        Site         @relation(fields: [site_id], references: [id])
   menu_orders Menu_order[]
@@ -130,7 +131,7 @@ model MenuItem {
 model Menu_order {
   id         String   @id @default(uuid())
   booking_id String
-  booking    Booking  @relation(fields: [booking_id], references: [id])
+  booking    Booking  @relation(fields: [booking_id], references: [id], onDelete: Cascade)
   quantity   Int?
   menu_id    String
   menu       MenuItem @relation(fields: [menu_id], references: [id])
@@ -148,10 +149,9 @@ enum MenuItemType {
 
 enum UserRole {
   CUSTOMER
-  EMPLOYEE
   SUPERVISOR
   MANAGER
-  ADMIN
+  STAFF
 }
 
 enum BookingStatus {

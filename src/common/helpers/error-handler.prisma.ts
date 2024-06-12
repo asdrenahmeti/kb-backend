@@ -17,7 +17,7 @@ export const catchErrorHandler = (error: any) => {
     }
   }
   if (error instanceof Prisma.PrismaClientValidationError) {
-    const errMsg = error.message.split('Invalid')[2];
+    const errMsg = error.message.split('Invalid')[1];
     throw new BadRequestException(`Invalid ${errMsg}`);
   }
   throw new HttpException(error.message, error.status);
