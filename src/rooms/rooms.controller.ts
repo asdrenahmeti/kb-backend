@@ -30,7 +30,7 @@ export class RoomsController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     try {
-      const createdRoom = this.roomsService.create(createRoomDto,file);
+      const createdRoom = this.roomsService.create(createRoomDto, file);
       return createdRoom;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

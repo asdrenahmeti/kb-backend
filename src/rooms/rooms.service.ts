@@ -31,9 +31,6 @@ export class RoomsService {
         throw new NotFoundException('No site found with that ID');
       }
 
-      // const siteOpeningTime = DateTime.fromISO(site.openingHours);
-      // const siteClosingTime = DateTime.fromISO(site.closingHours);
-
       if (!site.openingHours || !site.closingHours) {
         throw new Error(`Please provide business hours for site: ${site.name}`);
       }
@@ -49,15 +46,19 @@ export class RoomsService {
 
       const room = await this.prisma.room.create({ data });
 
-      if (openingHours && openingHours.length > 0) {
-        for (const slot of openingHours) {
-          // const startTime = DateTime.fromFormat(slot.startTime, 'HH:mm');
-          // const endTime = DateTime.fromFormat(slot.endTime, 'HH:mm');
+      let parsedOpeningHours: Array<any> = [];
+      if (typeof openingHours === 'string') {
+        try {
+          parsedOpeningHours = JSON.parse(openingHours);
+        } catch (error) {
+          throw new BadRequestException('Invalid format for opening hours');
+        }
+      } else {
+        parsedOpeningHours = openingHours;
+      }
 
-          // if (startTime < siteOpeningTime || endTime > siteClosingTime) {
-          //   throw new Error('Slot falls outside of site opening hours');
-          // }
-
+      if (parsedOpeningHours && parsedOpeningHours.length > 0) {
+        for (const slot of parsedOpeningHours) {
           await this.prisma.openHours.create({
             data: {
               ...slot,
