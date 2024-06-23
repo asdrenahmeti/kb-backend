@@ -32,6 +32,11 @@ export class MenusController {
     return this.menuService.findOne(id);
   }
 
+  @Get('site/:siteId')
+  findBySiteId(@Param('siteId') siteId: string) {
+    return this.menuService.findBySiteId(siteId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateMenuDto: UpdateMenuDto) {
     return this.menuService.update(id, updateMenuDto);

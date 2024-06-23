@@ -37,6 +37,19 @@ export class MenusService {
     return menu;
   }
 
+  async findBySiteId(siteId: string): Promise<MenuItem[]> {
+    const site = await this.prisma.site.findUnique({
+      where: { id: siteId },
+    });
+    if (!site) {
+      throw new NotFoundException(`Site with id ${siteId} not found`);
+    }
+
+    return this.prisma.menuItem.findMany({
+      where: { site_id: siteId },
+    });
+  }
+
   async update(id: string, updateMenuDto: UpdateMenuDto): Promise<MenuItem> {
     const menu = await this.prisma.menuItem.findUnique({
       where: { id },
