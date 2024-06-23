@@ -1,9 +1,15 @@
 import { BookingStatus, Menu_order } from '@prisma/client';
-import { IsNotEmpty, IsDateString, IsUUID, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsDateString,
+  IsUUID,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateBookingDto {
-  @IsNotEmpty()
-  @IsUUID()
+  @IsOptional()
+  @IsString()
   roomId: string;
 
   @IsNotEmpty()
@@ -18,6 +24,18 @@ export class CreateBookingDto {
 
   // @IsNotEmpty()
   // status: BookingStatus;
+
+  @IsString()
+  email: string;
+
+  @IsOptional()
+  phoneNumber: string;
+
+  @IsString()
+  firstName: string;
+
+  @IsOptional()
+  lastName: string;
 
   @IsOptional()
   user: string;

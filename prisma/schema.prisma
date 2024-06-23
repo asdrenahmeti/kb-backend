@@ -8,17 +8,20 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String   @unique
-  firstName  String?
-  lastName   String?
-  username   String?
-  password   String
-  entryToken String?
-  token      String?
-  profileImg String?
-  role       UserRole
-  profile    Profile?
+  id           String    @id @default(uuid())
+  email        String    @unique
+  firstName    String
+  lastName     String?
+  username     String?
+  phone_number String?
+  password     String?
+  entryToken   String?
+  token        String?
+  profileImg   String?
+  role         UserRole
+  profile      Profile?
+  bookings     Booking[]
+  // notes      Note[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -27,15 +30,14 @@ model User {
 }
 
 model Profile {
-  id          String   @id @default(uuid())
-  dateOfBirth DateTime @db.Date
-  phoneNumber String
-  address     String
-  city        String
-  country     String
-  zipCode     String
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String   @unique
+  id            String   @id @default(uuid())
+  date_of_birth DateTime @db.Date
+  address       String
+  city          String
+  country       String
+  zip_code      String
+  user          User     @relation(fields: [user_id], references: [id])
+  user_id       String   @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -87,8 +89,10 @@ model Booking {
   status      BookingStatus @default(AVAILABLE)
   room        Room?         @relation(fields: [roomId], references: [id])
   roomId      String?
-  user        String?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
   menu_orders Menu_order[]
+  // notes      Note[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -143,6 +147,21 @@ model Menu_order {
   @@map("menu_orders")
 }
 
+// model Note {
+//   id        String   @id @default(uuid())
+//   content   String
+//   bookingId String
+//   userId    String
+
+//   booking   Booking  @relation(fields: [bookingId], references: [id])
+//   createdBy User     @relation(fields: [userId], references: [id])
+
+// createdAt DateTime @default(now())
+// updatedAt DateTime @updatedAt
+
+//   @@map("notes")
+// }
+
 enum MenuItemType {
   DRINK
   FOOD
@@ -153,6 +172,7 @@ enum UserRole {
   SUPERVISOR
   MANAGER
   STAFF
+  GUEST
 }
 
 enum BookingStatus {

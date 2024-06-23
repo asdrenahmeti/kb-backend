@@ -22,6 +22,11 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @Post('create-account')
+  async createAccount(@Body() createAccountDto: CreateUserDto) {
+    return this.usersService.createAccount(createAccountDto);
+  }
+
   @Get()
   findAll() {
     return this.usersService.findAll();

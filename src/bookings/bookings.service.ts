@@ -7,17 +7,37 @@ import {
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { PrismaService } from '../prisma.service';
-import { Booking, BookingStatus } from '@prisma/client';
+import { Booking, BookingStatus, Menu_order, UserRole } from '@prisma/client';
 import { DateTime, Interval } from 'luxon';
 import { catchErrorHandler } from 'src/common/helpers/error-handler.prisma';
 import { HttpException } from '@nestjs/common';
+
+export type BookingData = {
+  roomId: string;
+  date: Date;
+  startTime: Date;
+  endTime: Date;
+  status: BookingStatus;
+  userId?: string; // Optional userId
+  menuOrders?: Menu_order[]; // Optional menu orders
+};
 
 @Injectable()
 export class BookingsService {
   constructor(private prisma: PrismaService) {}
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
     try {
-      const { roomId, date, startTime, endTime, menuOrders } = createBookingDto;
+      const {
+        roomId,
+        date,
+        startTime,
+        endTime,
+        menuOrders,
+        email,
+        phoneNumber,
+        firstName,
+        lastName,
+      } = createBookingDto;
 
       const room = await this.prisma.room.findUnique({
         where: { id: roomId },
@@ -80,17 +100,36 @@ export class BookingsService {
           overlappingBookingDetails: overlappingBookingDetails,
         });
       }
-      // const menuOrdersData = menuOrders.map((order) => ({
-      //   menu: { connect: { id: order.menu_id } },
-      // }));
 
-      return await this.prisma.booking.create({
+      let userId: string | undefined = undefined;
+      if (email) {
+        let user = await this.prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user) {
+          user = await this.prisma.user.create({
+            data: {
+              email,
+              phone_number: phoneNumber,
+              firstName,
+              lastName,
+              role: UserRole.GUEST,
+            },
+          });
+        }
+
+        userId = user.id;
+      }
+
+      const newBooking: Booking = await this.prisma.booking.create({
         data: {
-          roomId,
+          room: { connect: { id: roomId } },
           date,
           startTime: startTime,
           endTime: endTime,
           status: BookingStatus.RESERVED,
+          user: userId ? { connect: { id: userId } } : undefined,
           menu_orders: menuOrders
             ? {
                 create: menuOrders.map((order) => ({
@@ -102,8 +141,11 @@ export class BookingsService {
         },
         include: {
           menu_orders: true,
+          user: true,
         },
       });
+
+      return newBooking;
     } catch (error) {
       catchErrorHandler(error);
     }
