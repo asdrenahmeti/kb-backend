@@ -6,30 +6,28 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @IsNotEmpty()
   @IsString()
   firstName: string;
 
-  @IsNotEmpty()
   @IsString()
+  @IsOptional()
   lastName: string;
 
   @IsOptional()
   @IsString()
   username?: string;
 
-  @IsNotEmpty()
   @IsString()
   password: string;
 
-  @IsString()
+  @IsOptional()
   entryToken: string;
 
   @IsOptional()
   @IsString()
   profileImg?: string;
 
-  @IsNotEmpty()
   @IsString()
+  @IsOptional()
   role: UserRole;
 }

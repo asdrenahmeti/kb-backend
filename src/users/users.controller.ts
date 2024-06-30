@@ -22,6 +22,11 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @Post('create-account')
+  async createAccount(@Body() createAccountDto: CreateUserDto) {
+    return this.usersService.createAccount(createAccountDto);
+  }
+
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -35,6 +40,11 @@ export class UsersController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
+  }
+
+  @Get('email/:email')
+  findByEmail(@Param('email') email: string) {
+    return this.usersService.findByEmail(email);
   }
 
   @Delete(':id')
