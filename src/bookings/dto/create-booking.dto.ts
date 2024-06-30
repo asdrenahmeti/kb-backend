@@ -32,6 +32,7 @@ export class CreateBookingDto {
   phoneNumber: string;
 
   @IsString()
+  @IsOptional()
   firstName: string;
 
   @IsOptional()

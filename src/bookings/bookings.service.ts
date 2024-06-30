@@ -175,6 +175,9 @@ export class BookingsService {
         include: {
           rooms: {
             include: {
+              slots: {
+                select: { startTime: true, endTime: true, pricing: true },
+              },
               bookings: {
                 where: {
                   // date: { gte: openingHour.toISO(), lte: closingHour.toISO() },
@@ -188,6 +191,7 @@ export class BookingsService {
                   },
                 },
                 include: {
+                  user: true,
                   menu_orders: {
                     include: { menu: { select: { name: true, price: true } } },
                   },

@@ -42,6 +42,11 @@ export class UsersController {
     return this.usersService.update(+id, updateUserDto);
   }
 
+  @Get('email/:email')
+  findByEmail(@Param('email') email: string) {
+    return this.usersService.findByEmail(email);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
