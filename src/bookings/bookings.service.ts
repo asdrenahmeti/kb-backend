@@ -180,15 +180,26 @@ export class BookingsService {
               },
               bookings: {
                 where: {
-                  // date: { gte: openingHour.toISO(), lte: closingHour.toISO() },
-                  startTime: {
-                    gte: openingHour.toISO(),
-                    lte: closingHour.toISO(),
-                  },
-                  endTime: {
-                    gte: openingHour.toISO(),
-                    lte: closingHour.toISO(),
-                  },
+                  OR: [
+                    {
+                      startTime: {
+                        gte: openingHour.toISO(),
+                        lt: closingHour.toISO(),
+                      },
+                    },
+                    {
+                      endTime: {
+                        gt: openingHour.toISO(),
+                        lte: closingHour.toISO(),
+                      },
+                    },
+                    {
+                      AND: [
+                        { startTime: { lt: openingHour.toISO() } },
+                        { endTime: { gt: closingHour.toISO() } },
+                      ],
+                    },
+                  ],
                 },
                 include: {
                   user: true,
