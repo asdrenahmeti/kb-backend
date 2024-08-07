@@ -20,30 +20,26 @@ export class UsersService {
     const { email, password, firstName, lastName, username, role } =
       createUserDto;
 
-    const guestUser = await this.prisma.user.findUnique({
+    const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
-    if (!guestUser) {
-      throw new NotFoundException('Guest user not found');
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
     }
 
-    if (guestUser.role !== UserRole.GUEST) {
-      throw new ConflictException('User is already registered');
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id: guestUser.id },
+    const newUser = await this.prisma.user.create({
       data: {
+        email,
         password: await bcrypt.hash(password, 10),
         firstName,
         lastName,
         username,
-        role: UserRole.CUSTOMER,
+        role,
       },
     });
 
-    return updatedUser;
+    return newUser;
   }
 
   async findByEmail(email: string): Promise<User> {
@@ -58,8 +54,25 @@ export class UsersService {
     return user;
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll(): Promise<Omit<User, 'password'>[]> {
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        role: true,
+        phone_number: true,
+        entryToken: true,
+        token: true,
+        profileImg: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return users;
   }
 
   findOne(id: number) {
