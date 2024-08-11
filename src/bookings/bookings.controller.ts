@@ -14,6 +14,7 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ParamsToPaginationValidationPipe } from 'src/common/pipes/pagination.pipes';
 import { ParamsToIncludeValidationPipe } from 'src/common/pipes/params_to_include.pipes';
 import { ApiTags } from '@nestjs/swagger';
+import { CalculatePriceDto } from './dto/calculate-price-dto';
 
 @Controller('bookings')
 @ApiTags('bookings')
@@ -23,6 +24,11 @@ export class BookingsController {
   @Post()
   create(@Body() createBookingDto: CreateBookingDto) {
     return this.bookingsService.create(createBookingDto);
+  }
+
+  @Post('calculate-price')
+  calculatePrice(@Body() calculatePriceDto: CalculatePriceDto) {
+    return this.bookingsService.calculatePrice(calculatePriceDto);
   }
 
   @Get()

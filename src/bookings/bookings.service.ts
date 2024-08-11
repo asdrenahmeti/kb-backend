@@ -11,6 +11,7 @@ import { Booking, BookingStatus, Menu_order, UserRole } from '@prisma/client';
 import { DateTime, Interval } from 'luxon';
 import { catchErrorHandler } from 'src/common/helpers/error-handler.prisma';
 import { HttpException } from '@nestjs/common';
+import { CalculatePriceDto } from './dto/calculate-price-dto';
 
 export type BookingData = {
   roomId: string;
@@ -149,6 +150,72 @@ export class BookingsService {
     } catch (error) {
       catchErrorHandler(error);
     }
+  }
+
+  async calculatePrice(calculatePriceDto: CalculatePriceDto): Promise<number> {
+    const { roomId, startTime, endTime } = calculatePriceDto;
+
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+      include: { slots: true },
+    });
+
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    const start = DateTime.fromISO(startTime, { zone: 'UTC' });
+    const end = DateTime.fromISO(endTime, { zone: 'UTC' });
+
+    console.log(`Start Time: ${start.toFormat('HH:mm')}`);
+    console.log(`End Time: ${end.toFormat('HH:mm')}`);
+
+    let totalPrice = 0;
+
+    for (const slot of room.slots) {
+      let slotStart = DateTime.fromFormat(slot.startTime, 'HH:mm', {
+        zone: 'UTC',
+      });
+      let slotEnd = DateTime.fromFormat(slot.endTime, 'HH:mm', { zone: 'UTC' });
+
+      // Handle overnight slots
+      if (slotEnd < slotStart) {
+        slotEnd = slotEnd.plus({ days: 1 });
+      }
+
+      console.log(`Slot Start: ${slotStart.toFormat('HH:mm')}`);
+      console.log(`Slot End: ${slotEnd.toFormat('HH:mm')}`);
+      console.log(`Slot Pricing: ${slot.pricing}`);
+
+      // Handle bookings that span midnight
+      let bookingStart = start;
+      let bookingEnd = end;
+      if (bookingEnd < bookingStart) {
+        bookingEnd = bookingEnd.plus({ days: 1 });
+      }
+
+      // Adjust booking start time to map to the correct slot
+      if (bookingStart < slotEnd && bookingEnd > slotStart) {
+        const overlapStart =
+          bookingStart > slotStart ? bookingStart : slotStart;
+        const overlapEnd = bookingEnd < slotEnd ? bookingEnd : slotEnd;
+        const duration = overlapEnd.diff(overlapStart, 'hours').hours;
+
+        console.log(`Overlap Start: ${overlapStart.toFormat('HH:mm')}`);
+        console.log(`Overlap End: ${overlapEnd.toFormat('HH:mm')}`);
+        console.log(`Duration: ${duration}`);
+
+        // Ensure the duration is at least 1 hour
+        const roundedDuration = Math.ceil(duration);
+        totalPrice += roundedDuration * slot.pricing;
+
+        console.log(`Rounded Duration: ${roundedDuration}`);
+        console.log(`Total Price So Far: ${totalPrice}`);
+      }
+    }
+
+    console.log(`Final Total Price: ${totalPrice}`);
+    return totalPrice;
   }
 
   async findAll({ pagination, include, gt, lt, siteId }) {
