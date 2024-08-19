@@ -167,8 +167,6 @@ export class BookingsService {
     const start = DateTime.fromISO(startTime, { zone: 'UTC' });
     const end = DateTime.fromISO(endTime, { zone: 'UTC' });
 
-    console.log(`Start Time: ${start.toFormat('HH:mm')}`);
-    console.log(`End Time: ${end.toFormat('HH:mm')}`);
 
     let totalPrice = 0;
 
@@ -182,10 +180,6 @@ export class BookingsService {
       if (slotEnd < slotStart) {
         slotEnd = slotEnd.plus({ days: 1 });
       }
-
-      console.log(`Slot Start: ${slotStart.toFormat('HH:mm')}`);
-      console.log(`Slot End: ${slotEnd.toFormat('HH:mm')}`);
-      console.log(`Slot Pricing: ${slot.pricing}`);
 
       // Handle bookings that span midnight
       let bookingStart = start;
@@ -201,20 +195,13 @@ export class BookingsService {
         const overlapEnd = bookingEnd < slotEnd ? bookingEnd : slotEnd;
         const duration = overlapEnd.diff(overlapStart, 'hours').hours;
 
-        console.log(`Overlap Start: ${overlapStart.toFormat('HH:mm')}`);
-        console.log(`Overlap End: ${overlapEnd.toFormat('HH:mm')}`);
-        console.log(`Duration: ${duration}`);
-
         // Ensure the duration is at least 1 hour
         const roundedDuration = Math.ceil(duration);
         totalPrice += roundedDuration * slot.pricing;
 
-        console.log(`Rounded Duration: ${roundedDuration}`);
-        console.log(`Total Price So Far: ${totalPrice}`);
       }
     }
 
-    console.log(`Final Total Price: ${totalPrice}`);
     return totalPrice;
   }
 

@@ -11,7 +11,7 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
   create(createUserDto: CreateUserDto) {
     return 'This action adds a new user';
   }
@@ -93,11 +93,46 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+
+  async remove(id: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const profile = await this.prisma.profile.findUnique({ where: { user_id: id } });
+
+    if (profile) {
+      await this.prisma.$transaction([
+        this.prisma.profile.delete({ where: { user_id: id } }),
+        this.prisma.user.delete({ where: { id } }),
+      ]);
+    } else {
+      await this.prisma.user.delete({ where: { id } });
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+    const { email, firstName, lastName, username, role } = updateUserDto;
+
+    const user = await this.prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        email: email || user.email,
+        firstName: firstName || user.firstName,
+        lastName: lastName || user.lastName,
+        username: username || user.username,
+        role: role || user.role,
+      },
+    });
+
+    return updatedUser;
   }
 }
