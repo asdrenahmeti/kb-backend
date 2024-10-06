@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-
 import { ConfigModule } from '@nestjs/config';
 import { s3ClientProvider } from './aws.config';
 import { UsersModule } from './users/users.module';
@@ -14,6 +13,8 @@ import { AuthModule } from './auth/auth.module';
 import { MenusModule } from './menus/menus.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { EmailsModule } from './emails/emails.module';
+import { NotesModule } from './notes/notes.module';
 
 @Module({
   imports: [
@@ -31,6 +32,9 @@ import { join } from 'path';
     ProfilesModule,
     AuthModule,
     MenusModule,
+    EmailsModule,
+    NotesModule,
+    NotesModule
   ],
   controllers: [AppController],
   providers: [AppService, s3ClientProvider, PrismaService],

@@ -12,6 +12,7 @@ import { DateTime, Interval } from 'luxon';
 import { catchErrorHandler } from 'src/common/helpers/error-handler.prisma';
 import { HttpException } from '@nestjs/common';
 import { CalculatePriceDto } from './dto/calculate-price-dto';
+import { EmailsService } from './../emails/emails.service';
 
 export type BookingData = {
   roomId: string;
@@ -25,7 +26,102 @@ export type BookingData = {
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailsService: EmailsService,
+  ) {}
+
+  private generateBookingConfirmationHtml(
+    customerName: string,
+    bookingDetails: {
+      bookingId: string;
+      roomName: string;
+      bookingDate: string;
+      startTime: string;
+      endTime: string;
+      totalPrice: string;
+    }
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Booking Confirmation</title>
+          <style>
+              body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+              }
+              .container {
+                  max-width: 600px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+              }
+              h1 {
+                  color: #2c3e50;
+              }
+              .booking-details {
+                  background-color: #f9f9f9;
+                  padding: 15px;
+                  border-radius: 5px;
+                  margin-top: 20px;
+              }
+              .booking-item {
+                  margin-bottom: 10px;
+              }
+              .booking-label {
+                  font-weight: bold;
+              }
+              .footer {
+                  margin-top: 30px;
+                  text-align: center;
+                  font-size: 0.9em;
+                  color: #777;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <h1>Booking Confirmation</h1>
+              <p>Dear Customer,</p>
+              <p>Thank you for your booking. Here are the details of your reservation:</p>
+              
+              <div class="booking-details">
+                  <div class="booking-item">
+                      <span class="booking-label">Booking ID:</span> ${bookingDetails.bookingId}
+                  </div>
+                  <div class="booking-item">
+                      <span class="booking-label">Room:</span> ${bookingDetails.roomName}
+                  </div>
+                  <div class="booking-item">
+                      <span class="booking-label">Date:</span> ${bookingDetails.bookingDate}
+                  </div>
+                  <div class="booking-item">
+                      <span class="booking-label">Time:</span> ${bookingDetails.startTime} - ${bookingDetails.endTime}
+                  </div>
+                  <div class="booking-item">
+                      <span class="booking-label">Total Price:</span> ${bookingDetails.totalPrice}
+                  </div>
+              </div>
+
+              <p>If you need to make any changes to your booking or have any questions, please don't hesitate to contact us.</p>
+
+              <p>We look forward to welcoming you!</p>
+
+              <div class="footer">
+                  <p>This is an automated email. Please do not reply directly to this message.</p>
+              </div>
+          </div>
+      </body>
+      </html>
+    `;
+  }
+
   async create(createBookingDto: CreateBookingDto): Promise<Booking> {
     try {
       const {
@@ -89,7 +185,6 @@ export class BookingsService {
           ],
         },
       });
-
       if (overlappingBookings.length > 0) {
         const overlappingBooking = overlappingBookings[0];
         const overlappingBookingDetails = getBookingDetails(overlappingBooking);
@@ -146,10 +241,51 @@ export class BookingsService {
         },
       });
 
+      await this.scheduleBookingStatusCheck(newBooking.id);
+
+      if (email) {
+        const htmlContent = this.generateBookingConfirmationHtml(`${firstName} ${lastName}`, {
+          bookingId: newBooking.id,
+          roomName: room.name,
+          bookingDate: date,
+          startTime: startTime,
+          endTime: endTime,
+          totalPrice: '100', // Adjust this based on actual calculation
+        });
+  
+        await this.emailsService.sendEmail(
+          email,
+          'Booking Confirmation',
+          htmlContent
+        );
+      }
+  
+
       return newBooking;
     } catch (error) {
       catchErrorHandler(error);
     }
+  }
+
+  private async scheduleBookingStatusCheck(bookingId: string): Promise<void> {
+    setTimeout(async () => {
+      try {
+        const booking = await this.prisma.booking.findUnique({
+          where: { id: bookingId },
+        });
+
+        if (booking && booking.status === BookingStatus.RESERVED) {
+          await this.prisma.booking.delete({
+            where: { id: bookingId },
+          });
+          console.log(
+            `Booking ${bookingId} deleted due to no status change after 5 minutes.`,
+          );
+        }
+      } catch (error) {
+        console.error(`Error checking booking status for ${bookingId}:`, error);
+      }
+    }, 20 * 1000);
   }
 
   async calculatePrice(calculatePriceDto: CalculatePriceDto): Promise<number> {
@@ -166,7 +302,6 @@ export class BookingsService {
 
     const start = DateTime.fromISO(startTime, { zone: 'UTC' });
     const end = DateTime.fromISO(endTime, { zone: 'UTC' });
-
 
     let totalPrice = 0;
 
@@ -198,7 +333,6 @@ export class BookingsService {
         // Ensure the duration is at least 1 hour
         const roundedDuration = Math.ceil(duration);
         totalPrice += roundedDuration * slot.pricing;
-
       }
     }
 
