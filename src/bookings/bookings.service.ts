@@ -241,7 +241,7 @@ export class BookingsService {
         },
       });
 
-      await this.scheduleBookingStatusCheck(newBooking.id);
+      // await this.scheduleBookingStatusCheck(newBooking.id);
 
       if (email) {
         const htmlContent = this.generateBookingConfirmationHtml(`${firstName} ${lastName}`, {
@@ -267,26 +267,26 @@ export class BookingsService {
     }
   }
 
-  private async scheduleBookingStatusCheck(bookingId: string): Promise<void> {
-    setTimeout(async () => {
-      try {
-        const booking = await this.prisma.booking.findUnique({
-          where: { id: bookingId },
-        });
+  // private async scheduleBookingStatusCheck(bookingId: string): Promise<void> {
+  //   setTimeout(async () => {
+  //     try {
+  //       const booking = await this.prisma.booking.findUnique({
+  //         where: { id: bookingId },
+  //       });
 
-        if (booking && booking.status === BookingStatus.RESERVED) {
-          await this.prisma.booking.delete({
-            where: { id: bookingId },
-          });
-          console.log(
-            `Booking ${bookingId} deleted due to no status change after 5 minutes.`,
-          );
-        }
-      } catch (error) {
-        console.error(`Error checking booking status for ${bookingId}:`, error);
-      }
-    }, 20 * 1000);
-  }
+  //       if (booking && booking.status === BookingStatus.RESERVED) {
+  //         await this.prisma.booking.delete({
+  //           where: { id: bookingId },
+  //         });
+  //         console.log(
+  //           `Booking ${bookingId} deleted due to no status change after 5 minutes.`,
+  //         );
+  //       }
+  //     } catch (error) {
+  //       console.error(`Error checking booking status for ${bookingId}:`, error);
+  //     }
+  //   }, 20 * 1000);
+  // }
 
   async calculatePrice(calculatePriceDto: CalculatePriceDto): Promise<number> {
     const { roomId, startTime, endTime } = calculatePriceDto;
@@ -368,6 +368,7 @@ export class BookingsService {
               },
               bookings: {
                 where: {
+                  date: queryDate,
                   OR: [
                     {
                       startTime: {

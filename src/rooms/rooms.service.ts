@@ -105,6 +105,106 @@ export class RoomsService {
     });
   }
 
+  async findAvailableRooms(
+    siteId: string,
+    date: string,
+    startTime: string,
+    endTime: string,
+    persons: string,
+  ) {
+    // Parse and validate date
+    const parsedDate = DateTime.fromISO(date, { zone: 'utc' });
+    if (!parsedDate.isValid) {
+      throw new BadRequestException('Invalid date format. Expected format: YYYY-MM-DD');
+    }
+  
+    // Parse and validate times
+    const parsedStartTime = DateTime.fromFormat(startTime, 'HH:mm', { zone: 'utc' });
+    const parsedEndTime = DateTime.fromFormat(endTime, 'HH:mm', { zone: 'utc' });
+    if (!parsedStartTime.isValid || !parsedEndTime.isValid) {
+      throw new BadRequestException('Invalid time format. Expected format: HH:mm');
+    }
+  
+    // Combine date and time in UTC
+    const requestedStart = DateTime.fromISO(`${date}T${startTime}`, { zone: 'utc' });
+    const requestedEnd = DateTime.fromISO(`${date}T${endTime}`, { zone: 'utc' });
+  
+    if (requestedEnd <= requestedStart) {
+      throw new BadRequestException('End time must be after start time');
+    }
+  
+    // Parse and validate persons (capacity)
+    let minCapacity: number;
+    let maxCapacity: number;
+    if (persons.includes('-')) {
+      const [minStr, maxStr] = persons.split('-');
+      minCapacity = parseInt(minStr, 10);
+      maxCapacity = parseInt(maxStr, 10);
+    } else {
+      minCapacity = maxCapacity = parseInt(persons, 10);
+    }
+  
+    if (isNaN(minCapacity) || isNaN(maxCapacity)) {
+      throw new BadRequestException('Invalid persons capacity format');
+    }
+  
+    // Fetch rooms at the site with capacity within the range
+    const rooms = await this.prisma.room.findMany({
+      where: {
+        siteId: siteId,
+        capacity: {
+          gte: minCapacity,
+          lte: maxCapacity,
+        },
+      },
+      include: {
+        bookings: true,
+        slots: true,
+      },
+    });
+  
+    if (!rooms.length) {
+      throw new NotFoundException('No rooms found matching the criteria');
+    }
+  
+    const availableRooms = [];
+  
+    for (const room of rooms) {
+      // Check if the room is open during the requested time
+      const isOpen = room.slots.some((slot) => {
+        const slotStart = DateTime.fromFormat(slot.startTime, 'HH:mm', { zone: 'utc' });
+        const slotEnd = DateTime.fromFormat(slot.endTime, 'HH:mm', { zone: 'utc' });
+        return (
+          slotStart <= parsedStartTime &&
+          slotEnd >= parsedEndTime
+        );
+      });
+  
+      if (!isOpen) {
+        continue;
+      }
+  
+      // Check for overlapping bookings
+      const hasOverlap = room.bookings.some((booking) => {
+        const bookingStart = DateTime.fromJSDate(booking.startTime).setZone('utc');
+        const bookingEnd = DateTime.fromJSDate(booking.endTime).setZone('utc');
+  
+        return (
+          bookingStart < requestedEnd &&
+          bookingEnd > requestedStart
+        );
+      });
+  
+      if (!hasOverlap) {
+        availableRooms.push(room);
+      }
+    }
+  
+    return availableRooms;
+  }
+  
+  
+
   async findOne(id: string) {
     const room = await this.prisma.room.findUnique({
       where: { id },

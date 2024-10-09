@@ -10,6 +10,7 @@ import {
   HttpStatus,
   UseInterceptors,
   UploadedFile,
+  Query,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -35,6 +36,23 @@ export class RoomsController {
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
+  }
+
+  @Get('available')
+  async getAvailableRooms(
+    @Query('siteId') siteId: string,
+    @Query('date') date: string,
+    @Query('startTime') startTime: string,
+    @Query('endTime') endTime: string,
+    @Query('persons') persons: string,
+  ) {
+    return await this.roomsService.findAvailableRooms(
+      siteId,
+      date,
+      startTime,
+      endTime,
+      persons,
+    );
   }
 
   @Get()
