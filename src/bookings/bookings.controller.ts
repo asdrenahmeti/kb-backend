@@ -54,8 +54,19 @@ export class BookingsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBookingDto: UpdateBookingDto) {
-    return this.bookingsService.update(id, updateBookingDto);
+  update(
+    @Param('id') id: string, 
+    @Body() body: any
+  ) {
+    const updateBookingDto = new UpdateBookingDto(); 
+    updateBookingDto.roomId = body.roomId;
+    updateBookingDto.date = body.date;
+    updateBookingDto.startTime = body.startTime;
+    updateBookingDto.endTime = body.endTime;
+  
+    const userId = body.userId;
+  
+    return this.bookingsService.update(id, updateBookingDto, userId);
   }
 
   @Delete(':id')

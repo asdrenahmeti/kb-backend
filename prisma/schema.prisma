@@ -147,13 +147,14 @@ model Menu_order {
 model Booking_note {
   id        String   @id @default(uuid())
   content   String
+  metadata  Json?    // New field for structured data (optional)
   bookingId String
-  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade) // Add onDelete: Cascade here
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
   @@map("booking_notes")
 }
 

@@ -42,6 +42,18 @@ export class UsersService {
     return newUser;
   }
 
+  async findByToken(token: string): Promise<User> {
+    const user = await this.prisma.user.findFirst({
+      where: { token: token }, // Query using token
+    });
+  
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+  
+    return user;
+  }
+
   async changePassword(id: string, new_password: string): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
@@ -53,6 +65,26 @@ export class UsersService {
     await this.prisma.user.update({
       where: { id },
       data: { password: hashedNewPassword },
+    });
+  }
+
+  async completeProfile(id: string, new_password: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+  
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+  
+    const hashedNewPassword = await bcrypt.hash(new_password, 10);
+  
+    // Update the user's password, clear token, and change role to CUSTOMER
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedNewPassword,
+        token: null, // Empty the token
+        role: 'CUSTOMER', // Change the role
+      },
     });
   }
 

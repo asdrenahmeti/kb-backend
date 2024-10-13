@@ -13,6 +13,7 @@ import { catchErrorHandler } from 'src/common/helpers/error-handler.prisma';
 import { HttpException } from '@nestjs/common';
 import { CalculatePriceDto } from './dto/calculate-price-dto';
 import { EmailsService } from './../emails/emails.service';
+import { randomBytes } from 'node:crypto';
 
 export type BookingData = {
   roomId: string;
@@ -31,6 +32,47 @@ export class BookingsService {
     private emailsService: EmailsService,
   ) {}
 
+  private generateUserEmail(
+    link:string
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Booking Confirmation</title>
+          <style>
+              body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+              }
+              .container {
+                  max-width: 600px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  border: 1px solid #ddd;
+                  border-radius: 5px;
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <h1>User Confirmation</h1>
+              <p>Dear Customer</p>
+              <div class="booking-details">
+                  <div class="booking-item">
+                      <span class="booking-label">Booking ID:</span> <a href="${link}">Complete profile</a>
+                  </div>
+                  
+              </div>
+
+          </div>
+      </body>
+      </html>
+    `;
+  }
+
   private generateBookingConfirmationHtml(
     customerName: string,
     bookingDetails: {
@@ -40,7 +82,7 @@ export class BookingsService {
       startTime: string;
       endTime: string;
       totalPrice: string;
-    }
+    },
   ): string {
     return `
       <!DOCTYPE html>
@@ -134,6 +176,7 @@ export class BookingsService {
         phoneNumber,
         firstName,
         lastName,
+        makeMeMember
       } = createBookingDto;
 
       const room = await this.prisma.room.findUnique({
@@ -204,6 +247,8 @@ export class BookingsService {
         });
 
         if (!user) {
+          const token = randomBytes(32).toString('hex'); // Generate a random 32-byte token
+
           user = await this.prisma.user.create({
             data: {
               email,
@@ -211,6 +256,7 @@ export class BookingsService {
               firstName,
               lastName,
               role: UserRole.GUEST,
+              token: token, // Store the token
             },
           });
         }
@@ -244,22 +290,46 @@ export class BookingsService {
       // await this.scheduleBookingStatusCheck(newBooking.id);
 
       if (email) {
-        const htmlContent = this.generateBookingConfirmationHtml(`${firstName} ${lastName}`, {
-          bookingId: newBooking.id,
-          roomName: room.name,
-          bookingDate: date,
-          startTime: startTime,
-          endTime: endTime,
-          totalPrice: '100', // Adjust this based on actual calculation
-        });
-  
+        const htmlContent = this.generateBookingConfirmationHtml(
+          `${firstName} ${lastName}`,
+          {
+            bookingId: newBooking.id,
+            roomName: room.name,
+            bookingDate: date,
+            startTime: startTime,
+            endTime: endTime,
+            totalPrice: '100', // Adjust this based on actual calculation
+          },
+        );
+
         await this.emailsService.sendEmail(
           email,
           'Booking Confirmation',
-          htmlContent
+          htmlContent,
         );
       }
-  
+
+      let user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if(makeMeMember && email && user.role == 'GUEST') {
+        const htmlContent = this.generateUserEmail(`${process.env.FRONTEND_URL}/user/${user.token}`)
+
+        await this.emailsService.sendEmail(
+          email,
+          'Invitation to complete your profile in Karaokebox',
+          htmlContent,
+        );
+      }
+
+      await this.prisma.booking_note.create({
+        data: {
+          content: `CREATED`,
+          booking: { connect: { id: newBooking.id } },
+          user: { connect: { id: userId } }, // or SYSTEM ID if it's a system note
+        },
+      });
 
       return newBooking;
     } catch (error) {
@@ -418,6 +488,7 @@ export class BookingsService {
   async update(
     id: string,
     updateBookingDto: UpdateBookingDto,
+    userId: string,
   ): Promise<Booking> {
     const { roomId, date, startTime, endTime } = updateBookingDto;
 
@@ -426,6 +497,8 @@ export class BookingsService {
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
+
+    let newRoom = null;
 
     // If roomId is provided
     if (roomId) {
@@ -436,6 +509,8 @@ export class BookingsService {
       if (!room) {
         throw new NotFoundException('Room not found');
       }
+
+      newRoom = room; // Save the new room info for later use
 
       // Validate booking time
       validateBookingTime(room, date, startTime, endTime);
@@ -482,6 +557,59 @@ export class BookingsService {
           overlappingBookingDetails,
         });
       }
+    }
+
+    function getTimePart(dateTime: string | Date): string {
+      const date = new Date(dateTime);
+      // Extracts only the time part (hours, minutes, and seconds) from the ISO string
+      return date.toISOString().split('T')[1].split('.')[0]; // Get time as HH:MM:SS
+    }
+
+    const changes = {};
+
+    // Check for changes in roomId
+    if (roomId && roomId !== booking.roomId) {
+      const oldRoom = await this.prisma.room.findUnique({
+        where: { id: booking.roomId },
+      });
+
+      changes['roomId'] = {
+        old: { id: booking.roomId, name: oldRoom?.name || 'Unknown' },
+        new: { id: roomId, name: newRoom?.name || 'Unknown' },
+      };
+    }
+
+    // Check for changes in date (full date comparison)
+    if (
+      date &&
+      new Date(date).toISOString() !== new Date(booking.date).toISOString()
+    ) {
+      changes['date'] = { old: booking.date, new: date };
+    }
+
+    // Check for changes in startTime (compare only time, ignoring date)
+    if (
+      startTime &&
+      getTimePart(startTime) !== getTimePart(booking.startTime)
+    ) {
+      changes['startTime'] = { old: booking.startTime, new: startTime };
+    }
+
+    // Check for changes in endTime (compare only time, ignoring date)
+    if (endTime && getTimePart(endTime) !== getTimePart(booking.endTime)) {
+      changes['endTime'] = { old: booking.endTime, new: endTime };
+    }
+
+    // If there are any changes, log them to Booking_note
+    if (Object.keys(changes).length > 0) {
+      await this.prisma.booking_note.create({
+        data: {
+          content: 'UPDATED',
+          metadata: changes, // Store the changes in metadata as a JSON field
+          booking: { connect: { id: booking.id } },
+          user: { connect: { id: userId } }, // User making the update
+        },
+      });
     }
 
     return await this.prisma.booking.update({

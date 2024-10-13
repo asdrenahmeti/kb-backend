@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsOptional,
   IsString,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateBookingDto {
@@ -43,4 +44,8 @@ export class CreateBookingDto {
 
   @IsOptional()
   menuOrders: Menu_order[];
+
+  @IsOptional()
+  @IsBoolean()
+  makeMeMember?: boolean = false;
 }
