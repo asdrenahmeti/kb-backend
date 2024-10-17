@@ -15,6 +15,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { EmailsModule } from './emails/emails.module';
 import { NotesModule } from './notes/notes.module';
+import { SongsModule } from './songs/songs.module';
 
 @Module({
   imports: [
@@ -34,7 +35,8 @@ import { NotesModule } from './notes/notes.module';
     MenusModule,
     EmailsModule,
     NotesModule,
-    NotesModule
+    NotesModule,
+    SongsModule
   ],
   controllers: [AppController],
   providers: [AppService, s3ClientProvider, PrismaService],

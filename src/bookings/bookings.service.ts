@@ -32,9 +32,7 @@ export class BookingsService {
     private emailsService: EmailsService,
   ) {}
 
-  private generateUserEmail(
-    link:string
-  ): string {
+  private generateUserEmail(link: string): string {
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -176,7 +174,7 @@ export class BookingsService {
         phoneNumber,
         firstName,
         lastName,
-        makeMeMember
+        makeMeMember,
       } = createBookingDto;
 
       const room = await this.prisma.room.findUnique({
@@ -313,8 +311,10 @@ export class BookingsService {
         where: { email },
       });
 
-      if(makeMeMember && email && user.role == 'GUEST') {
-        const htmlContent = this.generateUserEmail(`${process.env.FRONTEND_URL}/user/${user.token}`)
+      if (makeMeMember && email && user.role == 'GUEST') {
+        const htmlContent = this.generateUserEmail(
+          `${process.env.FRONTEND_URL}/user/${user.token}`,
+        );
 
         await this.emailsService.sendEmail(
           email,
@@ -594,6 +594,10 @@ export class BookingsService {
     ) {
       changes['startTime'] = { old: booking.startTime, new: startTime };
     }
+
+    console.log(startTime)
+
+    console.log(getTimePart(startTime) !== getTimePart(booking.startTime));
 
     // Check for changes in endTime (compare only time, ignoring date)
     if (endTime && getTimePart(endTime) !== getTimePart(booking.endTime)) {
